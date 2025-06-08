@@ -34,11 +34,12 @@ def connect_db():
 @app.get("/")
 def home():
     client = connect_db()
-    result = client.execute("SELECT * FROM things")
+    result = client.execute("SELECT id, name FROM things")
+    things = result.row
 
     print(result.rows)
 
-    return render_template("pages/home.jinja")
+    return render_template("pages/home.jinja",things=things)
 
 
 #-----------------------------------------------------------
@@ -46,6 +47,16 @@ def home():
 #-----------------------------------------------------------
 @app.get("/thing/<int:id>")
 def show_thing(id):
+    client = connect_db()
+    result = client.execute()
+    sql = """
+       SELECT id, name ,price
+       FROM things
+       WHERE id=?
+    """
+    values = [id]
+    result = Client.execute (id)
+    things = result.row(0)
     return render_template("pages/thing.jinja")
 
 
