@@ -1,6 +1,7 @@
 from flask          import Flask
 from flask          import render_template
-from flask          import redirect
+from flask           import redirect
+from flask            import  request
 from libsql_client  import create_client_sync
 from dotenv         import load_dotenv
 import os
@@ -24,7 +25,7 @@ client = None
 def connect_db():
     global client
     if client == None:
-        client = create_client_sync(url=TURSO_URL, auth_token=TURSO_KEY)
+       client = create_client_sync (url=TURSO_URL, auth_token=TURSO_KEY)
     return client
 
 
@@ -35,7 +36,7 @@ def connect_db():
 def home():
     client = connect_db()
     result = client.execute("SELECT id, name FROM things")
-    things = result.row
+    things = result.rows
 
     print(result.rows)
 
@@ -48,16 +49,16 @@ def home():
 @app.get("/thing/<int:id>")
 def show_thing(id):
     client = connect_db()
-    result = client.execute()
+
     sql = """
-       SELECT id, name ,price
-       FROM things
+       SELECT id, name ,price FROM things
        WHERE id=?
     """
     values = [id]
-    result = Client.execute (id)
-    things = result.row(0)
-    return render_template("pages/thing.jinja")
+    result = client.execute (sql, values)
+    thing = result.rows[0]
+
+    return render_template("pages/thing.jinja", thing=thing)
 
 
 #-----------------------------------------------------------
@@ -67,13 +68,39 @@ def show_thing(id):
 def new_thing():
     return render_template("pages/thing-form.jinja")
 
+#-----------------------------------------------------------
+# proscss new things
+#-----------------------------------------------------------
+@app.post("/add-thing")
+def add_thing():
+    name = request.form.get("name")
+    price = request.form.get("price")
+    #connect to the db
+    client = connect_db()
+   #add the thing to the db
+    sql = """
+       insert into things (name,price) values (?,?)
+    """
+    values = [name,price]
+    result = client.execute (sql,values)
+   # head to the home page to see the list 
+    return redirect("/")
 
 #-----------------------------------------------------------
 # Thing deletion
 #-----------------------------------------------------------
 @app.get("/delete/<int:id>")
 def delete_thing(id):
+
+
+    client = connect_db()
+
+    sql = "DELETE FROM things WHERE id=?"
+    values = [id]
+    result = client.execute (sql, values)
+   # head to the home page to see the list 
     return redirect("/")
+    
 
 
 #-----------------------------------------------------------
